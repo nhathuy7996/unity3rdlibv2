@@ -21,7 +21,7 @@ namespace GameDevToi.ThirdLib.AdModule
             this.config = config;
             var networkDef = AdRegistry.GetNetwork(NetworkId);
             string displayName = networkDef?.displayName ?? NetworkId;
-            Debug.Log($"[{displayName}] Initializing...");
+            UnityEngine.Debug.Log($"[{displayName}] Initializing...");
         }
 
         public abstract void LoadAdUnit(AdUnit adUnit);
@@ -51,21 +51,75 @@ namespace GameDevToi.ThirdLib.AdModule
         {
             var networkDef = AdRegistry.GetNetwork(NetworkId);
             string displayName = networkDef?.displayName ?? NetworkId;
-            Debug.Log($"[{displayName}] {message}");
+
+            // Get the calling method info using StackTrace
+            var stackTrace = new System.Diagnostics.StackTrace(1, true);
+            var frame = stackTrace.GetFrame(0);
+
+            if (frame != null)
+            {
+                var fileName = frame.GetFileName();
+                var lineNumber = frame.GetFileLineNumber();
+
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    // Log with file context for proper navigation
+                    UnityEngine.Debug.LogFormat(LogType.Log, LogOption.None, null,
+                        $"[{displayName}] {message}\n  (at {fileName}:{lineNumber})");
+                    return;
+                }
+            }
+
+            // Fallback to normal logging
+            UnityEngine.Debug.Log($"[{displayName}] {message}");
         }
 
         protected void LogWarning(string message)
         {
             var networkDef = AdRegistry.GetNetwork(NetworkId);
             string displayName = networkDef?.displayName ?? NetworkId;
-            Debug.LogWarning($"[{displayName}] {message}");
+
+            var stackTrace = new System.Diagnostics.StackTrace(1, true);
+            var frame = stackTrace.GetFrame(0);
+
+            if (frame != null)
+            {
+                var fileName = frame.GetFileName();
+                var lineNumber = frame.GetFileLineNumber();
+
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    UnityEngine.Debug.LogFormat(LogType.Warning, LogOption.None, null,
+                        $"[{displayName}] {message}\n  (at {fileName}:{lineNumber})");
+                    return;
+                }
+            }
+
+            UnityEngine.Debug.LogWarning($"[{displayName}] {message}");
         }
 
         protected void LogError(string message)
         {
             var networkDef = AdRegistry.GetNetwork(NetworkId);
             string displayName = networkDef?.displayName ?? NetworkId;
-            Debug.LogError($"[{displayName}] {message}");
+
+            var stackTrace = new System.Diagnostics.StackTrace(1, true);
+            var frame = stackTrace.GetFrame(0);
+
+            if (frame != null)
+            {
+                var fileName = frame.GetFileName();
+                var lineNumber = frame.GetFileLineNumber();
+
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    UnityEngine.Debug.LogFormat(LogType.Error, LogOption.None, null,
+                        $"[{displayName}] {message}\n  (at {fileName}:{lineNumber})");
+                    return;
+                }
+            }
+
+            UnityEngine.Debug.LogError($"[{displayName}] {message}");
         }
     }
 }
