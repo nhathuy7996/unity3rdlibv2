@@ -69,6 +69,7 @@ namespace GameDevToi.ThirdLib.AdModule
             string formatName = formatDef?.displayName ?? adUnit.formatId;
             LogInfo($"Loading {formatName} ad with ID: {adUnitId}");
 
+
             string formatId = adUnit.formatId;
             if (formatId == "banner") LoadBanner(adUnitId);
             else if (formatId == "interstitial") LoadInterstitial(adUnitId);

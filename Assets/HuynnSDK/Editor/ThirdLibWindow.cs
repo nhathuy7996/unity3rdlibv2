@@ -18,7 +18,12 @@ namespace GameDevToi.ThirdLib
 
         // Tab management
         private int selectedTab = 0;
-        private readonly string[] tabs = { "SDK Config", "Ad Units", "Download Modules" };
+        private readonly string[] tabs = { "SDK Config", "Ad Units", "Custom Definitions", "Download Modules" };
+
+        // Custom Definitions management
+        private CustomAdDefinitions customDefinitions;
+        private SerializedObject serializedCustomDefinitions;
+        private const string CUSTOM_DEFINITIONS_PATH = "Assets/Resources/CustomAdDefinitions.asset";
 
         // Ad Units management
         private Dictionary<string, bool> adFormatFoldouts = new Dictionary<string, bool>();
@@ -39,6 +44,7 @@ namespace GameDevToi.ThirdLib
         private void OnEnable()
         {
             LoadOrCreateConfig();
+            LoadOrCreateCustomDefinitions();
             InitializeAdFormatFoldouts();
         }
 
@@ -84,6 +90,36 @@ namespace GameDevToi.ThirdLib
             }
         }
 
+        private void LoadOrCreateCustomDefinitions()
+        {
+            // Tìm custom definitions trong Resources
+            customDefinitions = Resources.Load<CustomAdDefinitions>("CustomAdDefinitions");
+
+            // Nếu chưa tồn tại, tạo mới
+            if (customDefinitions == null)
+            {
+                // Tạo thư mục Resources nếu chưa có
+                if (!Directory.Exists(RESOURCES_FOLDER))
+                {
+                    Directory.CreateDirectory(RESOURCES_FOLDER);
+                    AssetDatabase.Refresh();
+                }
+
+                // Tạo ScriptableObject mới
+                customDefinitions = CreateInstance<CustomAdDefinitions>();
+                AssetDatabase.CreateAsset(customDefinitions, CUSTOM_DEFINITIONS_PATH);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+
+                Debug.Log($"Created new CustomAdDefinitions at {CUSTOM_DEFINITIONS_PATH}");
+            }
+
+            if (customDefinitions != null)
+            {
+                serializedCustomDefinitions = new SerializedObject(customDefinitions);
+            }
+        }
+
         private void OnGUI()
         {
             if (config == null || serializedConfig == null)
@@ -116,6 +152,9 @@ namespace GameDevToi.ThirdLib
                     DrawAdUnitsTab();
                     break;
                 case 2:
+                    DrawCustomDefinitionsTab();
+                    break;
+                case 3:
                     DrawDownloadModulesTab();
                     break;
             }
@@ -126,6 +165,10 @@ namespace GameDevToi.ThirdLib
             DrawBottomButtons();
 
             serializedConfig.ApplyModifiedProperties();
+            if (serializedCustomDefinitions != null)
+            {
+                serializedCustomDefinitions.ApplyModifiedProperties();
+            }
         }
 
         private void DrawSDKConfigTab()
@@ -846,6 +889,155 @@ namespace GameDevToi.ThirdLib
             public string description;
             public string requiredSDK;
             public string defineSymbol;
+        }
+
+        #endregion
+
+        #region Custom Definitions Tab
+
+        private void DrawCustomDefinitionsTab()
+        {
+            if (customDefinitions == null || serializedCustomDefinitions == null)
+            {
+                EditorGUILayout.HelpBox("CustomAdDefinitions not found. Creating...", MessageType.Warning);
+                if (GUILayout.Button("Create CustomAdDefinitions"))
+                {
+                    LoadOrCreateCustomDefinitions();
+                }
+                return;
+            }
+
+            serializedCustomDefinitions.Update();
+
+            EditorGUILayout.HelpBox(
+                "Define custom ad formats and networks here. After editing, click 'Generate Constants' to create type-safe constants.\n" +
+                "IDs must be lowercase without spaces (e.g., 'my_custom_banner').",
+                MessageType.Info);
+
+            EditorGUILayout.Space();
+
+            // Custom Formats Section
+            DrawSection("Custom Ad Formats", () =>
+            {
+                SerializedProperty customFormats = serializedCustomDefinitions.FindProperty("customFormats");
+                EditorGUILayout.PropertyField(customFormats, new GUIContent("Custom Formats"), true);
+
+                EditorGUILayout.Space(5);
+                if (GUILayout.Button("+ Add Custom Format", GUILayout.Height(25)))
+                {
+                    customFormats.arraySize++;
+                    var newFormat = customFormats.GetArrayElementAtIndex(customFormats.arraySize - 1);
+                    newFormat.FindPropertyRelative("id").stringValue = "custom_format";
+                    newFormat.FindPropertyRelative("displayName").stringValue = "Custom Format";
+                    newFormat.FindPropertyRelative("description").stringValue = "";
+                    serializedCustomDefinitions.ApplyModifiedProperties();
+                }
+            });
+
+            EditorGUILayout.Space(10);
+
+            // Custom Networks Section
+            DrawSection("Custom Ad Networks", () =>
+            {
+                SerializedProperty customNetworks = serializedCustomDefinitions.FindProperty("customNetworks");
+                EditorGUILayout.PropertyField(customNetworks, new GUIContent("Custom Networks"), true);
+
+                EditorGUILayout.Space(5);
+                if (GUILayout.Button("+ Add Custom Network", GUILayout.Height(25)))
+                {
+                    customNetworks.arraySize++;
+                    var newNetwork = customNetworks.GetArrayElementAtIndex(customNetworks.arraySize - 1);
+                    newNetwork.FindPropertyRelative("id").stringValue = "custom_network";
+                    newNetwork.FindPropertyRelative("displayName").stringValue = "Custom Network";
+                    newNetwork.FindPropertyRelative("description").stringValue = "";
+                    newNetwork.FindPropertyRelative("editorColor").colorValue = Color.white;
+                    serializedCustomDefinitions.ApplyModifiedProperties();
+                }
+            });
+
+            EditorGUILayout.Space(20);
+
+            // Action Buttons
+            EditorGUILayout.BeginHorizontal();
+
+            // Validate
+            if (GUILayout.Button("Validate All", GUILayout.Height(30)))
+            {
+                if (customDefinitions.ValidateAll(out var errors))
+                {
+                    EditorUtility.DisplayDialog("Validation Success", "All definitions are valid!", "OK");
+                }
+                else
+                {
+                    EditorUtility.DisplayDialog("Validation Failed", string.Join("\n", errors), "OK");
+                }
+            }
+
+            // Generate
+            using (new EditorGUI.DisabledScope(customDefinitions.customFormats.Count == 0 && customDefinitions.customNetworks.Count == 0))
+            {
+                if (GUILayout.Button("Generate Constants Class", GUILayout.Height(30)))
+                {
+                    if (AdDefinitionCodeGenerator.GenerateConstantsClass(customDefinitions))
+                    {
+                        EditorUtility.DisplayDialog("Success",
+                            "Constants class generated successfully!\n\n" +
+                            "Generated file: Assets/HuynnSDK/Core/CustomAdConstants.cs\n\n" +
+                            "You can now use:\n" +
+                            "- CustomAdFormats.YourFormat\n" +
+                            "- CustomAdNetworks.YourNetwork",
+                            "OK");
+                    }
+                }
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(10);
+
+            // Register/Unregister buttons
+            EditorGUILayout.BeginHorizontal();
+
+            if (GUILayout.Button("Register All to AdRegistry", GUILayout.Height(25)))
+            {
+                customDefinitions.RegisterAll();
+                InitializeAdFormatFoldouts(); // Refresh foldouts
+                EditorUtility.DisplayDialog("Success",
+                    $"Registered {customDefinitions.customFormats.Count} formats and {customDefinitions.customNetworks.Count} networks to AdRegistry",
+                    "OK");
+            }
+
+            GUI.backgroundColor = new Color(1f, 0.7f, 0.7f);
+            if (GUILayout.Button("Unregister All from AdRegistry", GUILayout.Height(25)))
+            {
+                if (EditorUtility.DisplayDialog("Unregister Custom Definitions",
+                    "Are you sure you want to unregister all custom formats and networks from AdRegistry?\n\n" +
+                    "This will remove them from runtime but keep them in the CustomAdDefinitions asset.",
+                    "Unregister", "Cancel"))
+                {
+                    customDefinitions.UnregisterAll();
+                    InitializeAdFormatFoldouts(); // Refresh foldouts
+                    EditorUtility.DisplayDialog("Success",
+                        $"Unregistered {customDefinitions.customFormats.Count} formats and {customDefinitions.customNetworks.Count} networks from AdRegistry",
+                        "OK");
+                }
+            }
+            GUI.backgroundColor = Color.white;
+
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(10);
+
+            // Usage Example
+            EditorGUILayout.HelpBox(
+                "Example Usage:\n\n" +
+                "// Instead of magic strings:\n" +
+                "adUnit.formatId = \"my_custom_banner\";  // ❌ Error-prone\n\n" +
+                "// Use generated constants:\n" +
+                "adUnit.formatId = CustomAdFormats.MyCustomBanner;  // ✅ Type-safe",
+                MessageType.None);
+
+            serializedCustomDefinitions.ApplyModifiedProperties();
         }
 
         #endregion

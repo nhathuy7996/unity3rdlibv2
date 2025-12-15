@@ -254,45 +254,89 @@ Ad Units Management:
 
 ### 2. Runtime Usage (Code)
 
+#### ⚡ Type-Safe vs String-Based
+
+**3rdLib hỗ trợ 2 cách gọi API:**
+
+```csharp
+// ✅ RECOMMENDED: Type-safe với AdFormats constants
+AdBridge.Instance.ShowAd(AdFormats.Rewarded);
+// ✓ IntelliSense support
+// ✓ Compile-time check
+// ✓ No typo errors
+
+// ⚠️ LEGACY: String-based (vẫn hoạt động nhưng không khuyến khích)
+AdBridge.Instance.ShowAd("rewarded");
+// ✗ No IntelliSense
+// ✗ Runtime error if typo
+// ✗ "rewarddd" compiles but fails at runtime
+```
+
+**Built-in Constants:**
+```csharp
+using GameDevToi.ThirdLib.Core;
+
+// Ad Formats
+AdFormats.Banner          // "banner"
+AdFormats.Interstitial    // "interstitial"
+AdFormats.Rewarded        // "rewarded"
+AdFormats.AppOpen         // "appopen"
+AdFormats.RewardedInterstitial  // "rewarded_interstitial"
+AdFormats.Native          // "native"
+
+// Ad Networks
+AdNetworks.AdMob          // "admob"
+AdNetworks.AppLovin       // "applovin"
+AdNetworks.IronSource     // "ironsource"
+AdNetworks.UnityAds       // "unityads"
+
+// Custom (after generating via Custom Definitions tab)
+CustomAdFormats.YourCustomFormat
+CustomAdNetworks.YourCustomNetwork
+```
+
 #### Basic - Show Ads
 
 ```csharp
 using UnityEngine;
 using GameDevToi.ThirdLib;
+using GameDevToi.ThirdLib.Core; // ⭐ Import for AdFormats
 
 public class GameManager : MonoBehaviour
 {
-    // Show banner
+    // ✅ RECOMMENDED: Type-safe approach
     public void ShowBanner()
     {
-        AdBridge.Instance.ShowAd("banner");
+        AdBridge.Instance.ShowAd(AdFormats.Banner);
     }
 
-    // Hide banner
     public void HideBanner()
     {
         AdBridge.Instance.HideBanner();
     }
 
-    // Show interstitial
     public void ShowInterstitial()
     {
-        if (AdBridge.Instance.IsAdReady("interstitial"))
+        if (AdBridge.Instance.IsAdReady(AdFormats.Interstitial))
         {
-            AdBridge.Instance.ShowAd("interstitial");
+            AdBridge.Instance.ShowAd(AdFormats.Interstitial);
         }
     }
 
-    // Show rewarded
     public void ShowRewarded()
     {
-        AdBridge.Instance.ShowAd("rewarded");
+        AdBridge.Instance.ShowAd(AdFormats.Rewarded);
     }
 
-    // Show app open
     public void ShowAppOpen()
     {
-        AdBridge.Instance.ShowAd("appopen");
+        AdBridge.Instance.ShowAd(AdFormats.AppOpen);
+    }
+
+    // ⚠️ LEGACY: String-based (not recommended, error-prone)
+    public void ShowRewardedLegacy()
+    {
+        AdBridge.Instance.ShowAd("rewarded"); // ❌ Typo risk!
     }
 }
 ```
@@ -317,26 +361,32 @@ public class AdManager : MonoBehaviour
         }
     }
 
-    // Check ad ready status
+    // ✅ Type-safe approach
     public bool IsInterstitialReady()
     {
-        return AdBridge.Instance.IsAdReady("interstitial");
+        return AdBridge.Instance.IsAdReady(AdFormats.Interstitial);
     }
 
-    // Check specific network
+    // Check specific network (type-safe)
     public bool IsAdMobInterstitialReady()
     {
-        return AdBridge.Instance.IsAdReady("interstitial", "admob");
+        return AdBridge.Instance.IsAdReady(AdFormats.Interstitial, AdNetworks.AdMob);
     }
 
     // Get specific module
     public void ConfigureAdMob()
     {
-        var adMobModule = AdBridge.Instance.GetModule("admob");
+        var adMobModule = AdBridge.Instance.GetModule(AdNetworks.AdMob.id);
         if (adMobModule != null)
         {
             Debug.Log($"AdMob initialized: {adMobModule.IsInitialized}");
         }
+    }
+
+    // Load specific ad unit (type-safe)
+    public void LoadSpecificAd()
+    {
+        AdBridge.Instance.LoadSpecificAdUnit(AdFormats.Interstitial, AdNetworks.AdMob);
     }
 
     // Reload ad units (if config changed)
@@ -792,22 +842,25 @@ public class GameController : MonoBehaviour
 
     public void OnGameStart()
     {
-        AdBridge.Instance.ShowAd("banner");
+        // ✅ Type-safe
+        AdBridge.Instance.ShowAd(AdFormats.Banner);
     }
 
     public void OnLevelComplete()
     {
-        if (AdBridge.Instance.IsAdReady("interstitial"))
+        // ✅ Type-safe with check
+        if (AdBridge.Instance.IsAdReady(AdFormats.Interstitial))
         {
-            AdBridge.Instance.ShowAd("interstitial");
+            AdBridge.Instance.ShowAd(AdFormats.Interstitial);
         }
     }
 
     public void OnWatchAdForCoins()
     {
-        if (AdBridge.Instance.IsAdReady("rewarded"))
+        // ✅ Type-safe
+        if (AdBridge.Instance.IsAdReady(AdFormats.Rewarded))
         {
-            AdBridge.Instance.ShowAd("rewarded");
+            AdBridge.Instance.ShowAd(AdFormats.Rewarded);
         }
     }
 

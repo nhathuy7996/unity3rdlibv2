@@ -36,8 +36,24 @@ namespace GameDevToi.ThirdLib.Core
             RegisterNetwork(AdNetworks.IronSource);
             RegisterNetwork(AdNetworks.UnityAds);
 
+            // Load and register custom definitions
+            LoadCustomDefinitions();
+
             isInitialized = true;
             Debug.Log($"[AdRegistry] Initialized with {registeredFormats.Count} formats and {registeredNetworks.Count} networks");
+        }
+
+        /// <summary>
+        /// Load custom definitions từ Resources
+        /// </summary>
+        private static void LoadCustomDefinitions()
+        {
+            var customDefinitions = Resources.Load<CustomAdDefinitions>("CustomAdDefinitions");
+            if (customDefinitions != null)
+            {
+                customDefinitions.RegisterAll();
+                Debug.Log($"[AdRegistry] Loaded custom definitions: {customDefinitions.customFormats.Count} formats, {customDefinitions.customNetworks.Count} networks");
+            }
         }
 
         /// <summary>
@@ -78,6 +94,83 @@ namespace GameDevToi.ThirdLib.Core
 
             registeredNetworks[network.id] = network;
             Debug.Log($"[AdRegistry] Registered network: {network.displayName} ({network.id})");
+        }
+
+        /// <summary>
+        /// Hủy đăng ký Ad Format
+        /// </summary>
+        public static bool UnregisterFormat(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                Debug.LogError("[AdRegistry] Cannot unregister format with empty ID");
+                return false;
+            }
+
+            if (!registeredFormats.ContainsKey(id))
+            {
+                Debug.LogWarning($"[AdRegistry] Format '{id}' not found in registry");
+                return false;
+            }
+
+            var format = registeredFormats[id];
+            registeredFormats.Remove(id);
+            Debug.Log($"[AdRegistry] Unregistered format: {format.displayName} ({id})");
+            return true;
+        }
+
+        /// <summary>
+        /// Hủy đăng ký Ad Network
+        /// </summary>
+        public static bool UnregisterNetwork(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                Debug.LogError("[AdRegistry] Cannot unregister network with empty ID");
+                return false;
+            }
+
+            if (!registeredNetworks.ContainsKey(id))
+            {
+                Debug.LogWarning($"[AdRegistry] Network '{id}' not found in registry");
+                return false;
+            }
+
+            var network = registeredNetworks[id];
+            registeredNetworks.Remove(id);
+            Debug.Log($"[AdRegistry] Unregistered network: {network.displayName} ({id})");
+            return true;
+        }
+
+        /// <summary>
+        /// Hủy đăng ký tất cả custom definitions (giữ lại built-in)
+        /// </summary>
+        public static void UnregisterAllCustom()
+        {
+            var customDefinitions = Resources.Load<CustomAdDefinitions>("CustomAdDefinitions");
+            if (customDefinitions != null)
+            {
+                int formatCount = 0;
+                int networkCount = 0;
+
+                foreach (var format in customDefinitions.customFormats)
+                {
+                    if (format.IsValid() && UnregisterFormat(format.id))
+                    {
+                        formatCount++;
+                    }
+                }
+
+                foreach (var network in customDefinitions.customNetworks)
+                {
+                    if (network.IsValid() && UnregisterNetwork(network.id))
+                    {
+                        networkCount++;
+                    }
+                }
+
+                Debug.Log($"[AdRegistry] Unregistered {formatCount} custom formats and {networkCount} custom networks");
+            }
         }
 
         /// <summary>

@@ -696,7 +696,7 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Android: APPLOVIN_MAX;GOOGLE_MOBILE_ADS
+    Android: APPLOVIN_MAX;ADMOB
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend: {}

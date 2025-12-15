@@ -6,7 +6,7 @@ using GameDevToi.ThirdLib.AdModule;
 namespace GameDevToi.ThirdLib.Example
 {
     /// <summary>
-    /// Ví dụ sử dụng AdBridge với string-based IDs
+    /// Ví dụ sử dụng AdBridge - Type-Safe Approach (Recommended)
     /// </summary>
     public class AdBridgeExample : MonoBehaviour
     {
@@ -23,14 +23,18 @@ namespace GameDevToi.ThirdLib.Example
                 // In debug info
                 Debug.Log(AdBridge.Instance.GetDebugInfo());
             }
+
+            AdBridge.Instance.ShowAd(CustomAdFormats.HuynnAdmobFormat);
         }
 
-        // Ví dụ hiển thị Banner (sử dụng format ID)
+        // ===== ✅ RECOMMENDED: Type-Safe Approach =====
+
+        // Ví dụ hiển thị Banner (sử dụng AdFormats constants)
         public void ShowBanner()
         {
             if (AdBridge.Instance != null)
             {
-                AdBridge.Instance.ShowAd("banner");
+                AdBridge.Instance.ShowAd(AdFormats.Banner); // Type-safe!
             }
         }
 
@@ -39,7 +43,7 @@ namespace GameDevToi.ThirdLib.Example
         {
             if (AdBridge.Instance != null)
             {
-                AdBridge.Instance.ShowAd("interstitial");
+                AdBridge.Instance.ShowAd(AdFormats.Interstitial); // Type-safe!
             }
         }
 
@@ -48,7 +52,7 @@ namespace GameDevToi.ThirdLib.Example
         {
             if (AdBridge.Instance != null)
             {
-                AdBridge.Instance.ShowAd("rewarded");
+                AdBridge.Instance.ShowAd(AdFormats.Rewarded); // Type-safe!
             }
         }
 
@@ -57,32 +61,32 @@ namespace GameDevToi.ThirdLib.Example
         {
             if (AdBridge.Instance != null)
             {
-                AdBridge.Instance.ShowAd("appopen");
+                AdBridge.Instance.ShowAd(AdFormats.AppOpen); // Type-safe!
             }
         }
 
-        // Ví dụ kiểm tra ad có sẵn sàng không
+        // Ví dụ kiểm tra ad có sẵn sàng không (Type-safe)
         public void CheckAdReady()
         {
             if (AdBridge.Instance != null)
             {
-                bool interstitialReady = AdBridge.Instance.IsAdReady("interstitial");
+                bool interstitialReady = AdBridge.Instance.IsAdReady(AdFormats.Interstitial);
                 Debug.Log($"Interstitial ready: {interstitialReady}");
 
-                bool rewardedReady = AdBridge.Instance.IsAdReady("rewarded");
+                bool rewardedReady = AdBridge.Instance.IsAdReady(AdFormats.Rewarded);
                 Debug.Log($"Rewarded ready: {rewardedReady}");
 
-                bool bannerReady = AdBridge.Instance.IsAdReady("banner");
+                bool bannerReady = AdBridge.Instance.IsAdReady(AdFormats.Banner);
                 Debug.Log($"Banner ready: {bannerReady}");
             }
         }
 
-        // Ví dụ kiểm tra ad của network cụ thể (sử dụng network ID)
+        // Ví dụ kiểm tra ad của network cụ thể (Type-safe)
         public void CheckAdMobInterstitial()
         {
             if (AdBridge.Instance != null)
             {
-                bool ready = AdBridge.Instance.IsAdReady("interstitial", "admob");
+                bool ready = AdBridge.Instance.IsAdReady(AdFormats.Interstitial, AdNetworks.AdMob);
                 Debug.Log($"AdMob Interstitial ready: {ready}");
             }
         }
@@ -92,8 +96,8 @@ namespace GameDevToi.ThirdLib.Example
         {
             if (AdBridge.Instance != null)
             {
-                // Lấy AdMob module (sử dụng network ID)
-                var adMobModule = AdBridge.Instance.GetModule("admob");
+                // Lấy AdMob module (Type-safe)
+                var adMobModule = AdBridge.Instance.GetModule(AdNetworks.AdMob.id);
                 if (adMobModule != null && adMobModule.IsInitialized)
                 {
                     Debug.Log("AdMob module is initialized and ready");

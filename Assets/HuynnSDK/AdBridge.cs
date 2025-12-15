@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using GameDevToi.ThirdLib.Core;
 using GameDevToi.ThirdLib.AdModule;
 
@@ -98,11 +99,8 @@ namespace GameDevToi.ThirdLib
             // Đăng ký các built-in modules
             RegisterBuiltInModules();
 
-            // Phân tích ad units và init các module cần thiết
-            InitializeRequiredModules();
-
-            isInitialized = true;
-            Debug.Log("[AdBridge] Initialization completed");
+            // Phân tích ad units và init các module cần thiết (async)
+            _ = InitializeRequiredModulesAsync();
         }
 
         /// <summary>
@@ -170,13 +168,14 @@ namespace GameDevToi.ThirdLib
         }
 
         /// <summary>
-        /// Phân tích ad units và khởi tạo các module cần thiết
+        /// Phân tích ad units và khởi tạo các module cần thiết (async)
         /// </summary>
-        private void InitializeRequiredModules()
+        private async Task InitializeRequiredModulesAsync()
         {
             if (config.adUnits == null || config.adUnits.Count == 0)
             {
                 Debug.LogWarning("[AdBridge] No ad units configured");
+                isInitialized = true;
                 return;
             }
 
@@ -200,14 +199,46 @@ namespace GameDevToi.ThirdLib
 
                     adModules[networkId].Initialize(config);
 
-                    // Load các ad units của network này
-                    LoadAdUnitsForNetwork(networkId);
+                    // Đợi cho đến khi module initialized (timeout 10 giây)
+                    bool initialized = await WaitForModuleInitialized(networkId, 10f);
+
+                    if (initialized)
+                    {
+                        Debug.Log($"[AdBridge] {displayName} module initialized successfully");
+
+                        // Load các ad units của network này
+                        LoadAdUnitsForNetwork(networkId);
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[AdBridge] {displayName} module initialization timeout");
+                    }
                 }
                 else
                 {
                     Debug.LogWarning($"[AdBridge] Module for '{networkId}' not registered");
                 }
             }
+
+            isInitialized = true;
+            Debug.Log("[AdBridge] Initialization completed");
+        }
+
+        /// <summary>
+        /// Đợi cho module được khởi tạo với timeout
+        /// </summary>
+        private async Task<bool> WaitForModuleInitialized(string networkId, float timeoutSeconds)
+        {
+            float elapsed = 0f;
+            float checkInterval = 0.1f;
+
+            while (!adModules[networkId].IsInitialized && elapsed < timeoutSeconds)
+            {
+                await Task.Delay((int)(checkInterval * 1000));
+                elapsed += checkInterval;
+            }
+
+            return adModules[networkId].IsInitialized;
         }
 
         /// <summary>
@@ -230,6 +261,102 @@ namespace GameDevToi.ThirdLib
                     adModules[networkId].LoadAdUnit(adUnit);
                 }
             }
+        }
+
+        /// <summary>
+        /// Load một ad unit cụ thể theo format và network
+        /// </summary>
+        /// <param name="formatId">Format ID (e.g., "banner", "interstitial", "rewarded")</param>
+        /// <param name="networkId">Network ID (e.g., "admob", "applovin")</param>
+        /// <returns>True nếu load thành công, false nếu không tìm thấy hoặc lỗi</returns>
+        public bool LoadSpecificAdUnit(string formatId, string networkId)
+        {
+            if (!isInitialized)
+            {
+                Debug.LogError("[AdBridge] Not initialized yet");
+                return false;
+            }
+
+            // Tìm ad unit phù hợp
+            var adUnit = config.adUnits
+                .FirstOrDefault(ad => ad.formatId == formatId &&
+                                     ad.networkId == networkId &&
+                                     ad.isActive &&
+                                     ad.IsValid());
+
+            if (adUnit == null)
+            {
+                var formatDef = AdRegistry.GetFormat(formatId);
+                var networkDef = AdRegistry.GetNetwork(networkId);
+                string formatName = formatDef?.displayName ?? formatId;
+                string networkName = networkDef?.displayName ?? networkId;
+                Debug.LogWarning($"[AdBridge] Ad unit not found: {formatName} on {networkName}");
+                return false;
+            }
+
+            // Kiểm tra module có tồn tại không
+            if (!adModules.ContainsKey(networkId))
+            {
+                var networkDef = AdRegistry.GetNetwork(networkId);
+                string displayName = networkDef?.displayName ?? networkId;
+                Debug.LogWarning($"[AdBridge] Module for '{displayName}' not found");
+                return false;
+            }
+
+            var module = adModules[networkId];
+            if (!module.IsInitialized)
+            {
+                var networkDef = AdRegistry.GetNetwork(networkId);
+                string displayName = networkDef?.displayName ?? networkId;
+                Debug.LogWarning($"[AdBridge] {displayName} module not initialized yet");
+                return false;
+            }
+
+            // Load ad unit
+            Debug.Log($"[AdBridge] Loading ad unit: {adUnit.name}");
+            module.LoadAdUnit(adUnit);
+            return true;
+        }
+
+        /// <summary>
+        /// Load một ad unit cụ thể theo tên
+        /// </summary>
+        /// <param name="adUnitName">Tên của ad unit trong config</param>
+        /// <returns>True nếu load thành công, false nếu không tìm thấy hoặc lỗi</returns>
+        public bool LoadAdUnitByName(string adUnitName)
+        {
+            if (!isInitialized)
+            {
+                Debug.LogError("[AdBridge] Not initialized yet");
+                return false;
+            }
+
+            // Tìm ad unit theo tên
+            var adUnit = config.adUnits
+                .FirstOrDefault(ad => ad.name == adUnitName && ad.isActive && ad.IsValid());
+
+            if (adUnit == null)
+            {
+                Debug.LogWarning($"[AdBridge] Ad unit not found: {adUnitName}");
+                return false;
+            }
+
+            return LoadSpecificAdUnit(adUnit.formatId, adUnit.networkId);
+        }
+
+        /// <summary>
+        /// Load một ad unit cụ thể theo format và network (type-safe overload)
+        /// </summary>
+        /// <param name="format">Ad format definition</param>
+        /// <param name="network">Ad network definition</param>
+        public bool LoadSpecificAdUnit(AdFormatDefinition format, AdNetworkDefinition network)
+        {
+            if (format == null || network == null)
+            {
+                Debug.LogError("[AdBridge] Format or network is null");
+                return false;
+            }
+            return LoadSpecificAdUnit(format.id, network.id);
         }
 
         /// <summary>
@@ -288,6 +415,20 @@ namespace GameDevToi.ThirdLib
         }
 
         /// <summary>
+        /// Hiển thị quảng cáo theo format (type-safe overload)
+        /// </summary>
+        /// <param name="format">Ad format definition (e.g., AdFormats.Rewarded)</param>
+        public void ShowAd(AdFormatDefinition format)
+        {
+            if (format == null)
+            {
+                Debug.LogError("[AdBridge] Format is null");
+                return;
+            }
+            ShowAd(format.id);
+        }
+
+        /// <summary>
         /// Kiểm tra xem quảng cáo có sẵn sàng không
         /// </summary>
         public bool IsAdReady(string formatId, string specificNetworkId = null)
@@ -315,6 +456,17 @@ namespace GameDevToi.ThirdLib
         }
 
         /// <summary>
+        /// Kiểm tra xem quảng cáo có sẵn sàng không (type-safe overload)
+        /// </summary>
+        /// <param name="format">Ad format definition</param>
+        /// <param name="network">Optional: specific network definition</param>
+        public bool IsAdReady(AdFormatDefinition format, AdNetworkDefinition network = null)
+        {
+            if (format == null) return false;
+            return IsAdReady(format.id, network?.id);
+        }
+
+        /// <summary>
         /// Reload ad units (dùng khi config thay đổi)
         /// </summary>
         public void ReloadAdUnits()
@@ -327,7 +479,7 @@ namespace GameDevToi.ThirdLib
 
             Debug.Log("[AdBridge] Reloading ad units...");
             config = ThirdLibConfig.Instance;
-            InitializeRequiredModules();
+            _ = InitializeRequiredModulesAsync();
         }
 
         /// <summary>

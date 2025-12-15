@@ -30,11 +30,3 @@ MonoBehaviour:
     isActive: 1
     priority: 0
     notes: 
-  - name: admob interstitial
-    formatId: interstitial
-    networkId: applovin
-    androidAdUnitId: 12345
-    iosAdUnitId: 
-    isActive: 1
-    priority: 0
-    notes: 
