@@ -72,6 +72,12 @@ namespace GameDevToi.ThirdLib.AdModule
             MaxSdkCallbacks.Rewarded.OnAdDisplayFailedEvent += OnRewardedDisplayFailed;
             MaxSdkCallbacks.Rewarded.OnAdReceivedRewardEvent += OnRewardedReceivedReward;
             MaxSdkCallbacks.Rewarded.OnAdRevenuePaidEvent += OnRewardedRevenuePaid;
+
+            // MREC callbacks
+            MaxSdkCallbacks.MRec.OnAdLoadedEvent += OnMrecLoaded;
+            MaxSdkCallbacks.MRec.OnAdLoadFailedEvent += OnMrecLoadFailed;
+            MaxSdkCallbacks.MRec.OnAdClickedEvent += OnMrecClicked;
+            MaxSdkCallbacks.MRec.OnAdRevenuePaidEvent += OnMrecRevenuePaid;
         }
 
         public override void LoadAdUnit(AdUnit adUnit)
@@ -96,6 +102,7 @@ namespace GameDevToi.ThirdLib.AdModule
             AdEvents.Trigger(AdEventType.AdLoadStarted, formatId, NetworkId, adUnitId);
 
             if (formatId == "banner") LoadBanner(adUnitId);
+            else if (formatId == "mrec") LoadMrec(adUnitId);
             else if (formatId == "interstitial") LoadInterstitial(adUnitId);
             else if (formatId == "rewarded") LoadRewarded(adUnitId);
             else LogWarning($"Unknown ad format: {formatId}");
@@ -107,6 +114,13 @@ namespace GameDevToi.ThirdLib.AdModule
             MaxSdk.CreateBanner(adUnitId, config);
             MaxSdk.SetBannerBackgroundColor(adUnitId, Color.black);
             MaxSdk.ShowBanner(adUnitId);
+        }
+
+        private void LoadMrec(string adUnitId)
+        {
+            var config = new MaxSdkBase.AdViewConfiguration(MaxSdkBase.AdViewPosition.BottomRight);
+            MaxSdk.CreateMRec(adUnitId, config);
+            MaxSdk.ShowMRec(adUnitId);
         }
 
         private void LoadInterstitial(string adUnitId)
@@ -149,6 +163,10 @@ namespace GameDevToi.ThirdLib.AdModule
             {
                 MaxSdk.ShowBanner(adUnitId);
             }
+            else if (formatId == "mrec")
+            {
+                MaxSdk.ShowMRec(adUnitId);
+            }
             else if (formatId == "interstitial")
             {
                 MaxSdk.ShowInterstitial(adUnitId);
@@ -169,6 +187,10 @@ namespace GameDevToi.ThirdLib.AdModule
             if (formatId == "banner")
             {
                 return loadedAds.Contains("banner");
+            }
+            else if (formatId == "mrec")
+            {
+                return loadedAds.Contains("mrec");
             }
             else if (formatId == "interstitial")
             {
@@ -200,6 +222,24 @@ namespace GameDevToi.ThirdLib.AdModule
             }
         }
 
+        public override void HideMrec()
+        {
+            if (adUnitIds.ContainsKey("mrec"))
+            {
+                MaxSdk.HideMRec(adUnitIds["mrec"]);
+                LogInfo("MREC hidden");
+            }
+        }
+
+        public override void ShowMrec()
+        {
+            if (adUnitIds.ContainsKey("mrec"))
+            {
+                MaxSdk.ShowMRec(adUnitIds["mrec"]);
+                LogInfo("MREC shown");
+            }
+        }
+
         public override void DestroyAd(string formatId)
         {
             if (formatId == "banner" && adUnitIds.ContainsKey("banner"))
@@ -207,6 +247,12 @@ namespace GameDevToi.ThirdLib.AdModule
                 MaxSdk.DestroyBanner(adUnitIds["banner"]);
                 loadedAds.Remove("banner");
                 LogInfo("Banner destroyed");
+            }
+            else if (formatId == "mrec" && adUnitIds.ContainsKey("mrec"))
+            {
+                MaxSdk.DestroyMRec(adUnitIds["mrec"]);
+                loadedAds.Remove("mrec");
+                LogInfo("MREC destroyed");
             }
         }
 
@@ -359,6 +405,37 @@ namespace GameDevToi.ThirdLib.AdModule
             double revenue = adInfo.Revenue;
             LogInfo($"Rewarded revenue: {revenue:F4} USD");
             AdEvents.TriggerPaid("rewarded", NetworkId, adUnitId, revenue, "USD");
+        }
+
+        #endregion
+
+        #region MREC Callbacks
+
+        private void OnMrecLoaded(string adUnitId, MaxSdkBase.AdInfo adInfo)
+        {
+            loadedAds.Add("mrec");
+            LogInfo($"MREC loaded: {adUnitId}");
+            AdEvents.Trigger(AdEventType.AdLoadSuccess, "mrec", NetworkId, adUnitId);
+            AdEvents.Trigger(AdEventType.AdImpression, "mrec", NetworkId, adUnitId);
+        }
+
+        private void OnMrecLoadFailed(string adUnitId, MaxSdkBase.ErrorInfo errorInfo)
+        {
+            LogError($"MREC load failed: {errorInfo.Message}");
+            AdEvents.TriggerFailed("mrec", NetworkId, adUnitId, errorInfo.Message, (int)errorInfo.Code);
+        }
+
+        private void OnMrecClicked(string adUnitId, MaxSdkBase.AdInfo adInfo)
+        {
+            LogInfo($"MREC clicked");
+            AdEvents.Trigger(AdEventType.AdClicked, "mrec", NetworkId, adUnitId);
+        }
+
+        private void OnMrecRevenuePaid(string adUnitId, MaxSdkBase.AdInfo adInfo)
+        {
+            double revenue = adInfo.Revenue;
+            LogInfo($"MREC revenue: {revenue:F4} USD");
+            AdEvents.TriggerPaid("mrec", NetworkId, adUnitId, revenue, "USD");
         }
 
         #endregion

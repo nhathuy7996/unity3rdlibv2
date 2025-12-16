@@ -537,6 +537,60 @@ namespace GameDevToi.ThirdLib
         }
 
         /// <summary>
+        /// Ẩn MREC (Medium Rectangle 300x250)
+        /// </summary>
+        public void HideMrec()
+        {
+            if (!isInitialized)
+            {
+                Debug.LogWarning("[AdBridge] Not initialized yet");
+                return;
+            }
+
+            // Tìm network đang hiển thị MREC
+            var mrecUnits = config.GetActiveAdUnits("mrec");
+            if (mrecUnits.Count > 0)
+            {
+                var networkId = mrecUnits[0].networkId;
+                if (adModules.ContainsKey(networkId))
+                {
+                    adModules[networkId].HideMrec();
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[AdBridge] No active MREC ad units found");
+            }
+        }
+
+        /// <summary>
+        /// Hiện MREC (Medium Rectangle 300x250)
+        /// </summary>
+        public void ShowMrec()
+        {
+            if (!isInitialized)
+            {
+                Debug.LogWarning("[AdBridge] Not initialized yet");
+                return;
+            }
+
+            // Tìm network đang hiển thị MREC
+            var mrecUnits = config.GetActiveAdUnits("mrec");
+            if (mrecUnits.Count > 0)
+            {
+                var networkId = mrecUnits[0].networkId;
+                if (adModules.ContainsKey(networkId))
+                {
+                    adModules[networkId].ShowMrec();
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[AdBridge] No active MREC ad units found");
+            }
+        }
+
+        /// <summary>
         /// Lấy thông tin debug
         /// </summary>
         public string GetDebugInfo()

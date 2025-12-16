@@ -20,6 +20,7 @@ namespace GameDevToi.ThirdLib.AdModule
 
         // Dictionary to store loaded ads by format ID
         private Dictionary<string, BannerView> bannerAds = new Dictionary<string, BannerView>();
+        private Dictionary<string, BannerView> mrecAds = new Dictionary<string, BannerView>();
         private Dictionary<string, InterstitialAd> interstitialAds = new Dictionary<string, InterstitialAd>();
         private Dictionary<string, RewardedAd> rewardedAds = new Dictionary<string, RewardedAd>();
         private Dictionary<string, AppOpenAd> appOpenAds = new Dictionary<string, AppOpenAd>();
@@ -72,6 +73,7 @@ namespace GameDevToi.ThirdLib.AdModule
 
             string formatId = adUnit.formatId;
             if (formatId == "banner") LoadBanner(adUnitId);
+            else if (formatId == "mrec") LoadMrec(adUnitId);
             else if (formatId == "interstitial") LoadInterstitial(adUnitId);
             else if (formatId == "rewarded") LoadRewarded(adUnitId);
             else if (formatId == "appopen") LoadAppOpen(adUnitId);
@@ -104,6 +106,10 @@ namespace GameDevToi.ThirdLib.AdModule
                 if (formatId == "banner")
                 {
                     ShowBanner();
+                }
+                else if (formatId == "mrec")
+                {
+                    ShowMrec();
                 }
                 else if (formatId == "interstitial")
                 {
@@ -164,6 +170,10 @@ namespace GameDevToi.ThirdLib.AdModule
                 {
                     return bannerAds.ContainsKey(formatId);
                 }
+                else if (formatId == "mrec")
+                {
+                    return mrecAds.ContainsKey(formatId);
+                }
                 else if (formatId == "interstitial")
                 {
                     return interstitialAds.ContainsKey(formatId) && interstitialAds[formatId].CanShowAd();
@@ -198,6 +208,12 @@ namespace GameDevToi.ThirdLib.AdModule
                     bannerAds[formatId].Destroy();
                     bannerAds.Remove(formatId);
                     LogInfo("Banner ad destroyed");
+                }
+                else if (formatId == "mrec" && mrecAds.ContainsKey(formatId))
+                {
+                    mrecAds[formatId].Destroy();
+                    mrecAds.Remove(formatId);
+                    LogInfo("MREC ad destroyed");
                 }
                 else if (formatId == "interstitial" && interstitialAds.ContainsKey(formatId))
                 {
@@ -289,6 +305,66 @@ namespace GameDevToi.ThirdLib.AdModule
             // Load the banner ad
             AdRequest request = new AdRequest();
             bannerView.LoadAd(request);
+        }
+        #endregion
+
+        #region MREC Ad Implementation
+        private void LoadMrec(string adUnitId)
+        {
+            LogInfo($"Loading MREC: {adUnitId}");
+
+            // Trigger load started event
+            AdEvents.Trigger(AdEventType.AdLoadStarted, "mrec", NetworkId, adUnitId);
+
+            // Destroy existing mrec if any
+            if (mrecAds.ContainsKey("mrec"))
+            {
+                mrecAds["mrec"].Destroy();
+            }
+
+            // Create MREC ad (300x250) - positioned at bottom center by default
+            BannerView mrecView = new BannerView(adUnitId, AdSize.MediumRectangle, AdPosition.BottomRight);
+
+            // Register event handlers
+            mrecView.OnBannerAdLoaded += () =>
+            {
+                LogInfo("MREC ad loaded successfully");
+                loadedAds.Add("mrec");
+                AdEvents.Trigger(AdEventType.AdLoadSuccess, "mrec", NetworkId, adUnitId);
+            };
+
+            mrecView.OnBannerAdLoadFailed += (LoadAdError error) =>
+            {
+                LogError($"MREC ad failed to load: {error.GetMessage()}");
+                loadedAds.Remove("mrec");
+                AdEvents.TriggerFailed("mrec", NetworkId, adUnitId, error.GetMessage(), error.GetCode());
+            };
+
+            mrecView.OnAdPaid += (AdValue adValue) =>
+            {
+                LogInfo($"MREC ad paid: {adValue.Value} {adValue.CurrencyCode}");
+                AdEvents.TriggerPaid("mrec", NetworkId, adUnitId,
+                    (double)adValue.Value / 1000000.0, adValue.CurrencyCode);
+            };
+
+            mrecView.OnAdClicked += () =>
+            {
+                LogInfo("MREC ad clicked");
+                AdEvents.Trigger(AdEventType.AdClicked, "mrec", NetworkId, adUnitId);
+            };
+
+            mrecView.OnAdImpressionRecorded += () =>
+            {
+                LogInfo("MREC ad impression recorded");
+                AdEvents.Trigger(AdEventType.AdImpression, "mrec", NetworkId, adUnitId);
+            };
+
+            // Store reference
+            mrecAds["mrec"] = mrecView;
+
+            // Load the MREC ad
+            AdRequest request = new AdRequest();
+            mrecView.LoadAd(request);
         }
         #endregion
 
@@ -634,6 +710,34 @@ namespace GameDevToi.ThirdLib.AdModule
             else
             {
                 LogWarning("No banner ad loaded to show");
+            }
+        }
+        #endregion
+
+        #region MREC Visibility Control
+        public override void HideMrec()
+        {
+            if (mrecAds.ContainsKey("mrec"))
+            {
+                mrecAds["mrec"].Hide();
+                LogInfo("MREC ad hidden");
+            }
+            else
+            {
+                LogWarning("No MREC ad loaded to hide");
+            }
+        }
+
+        public override void ShowMrec()
+        {
+            if (mrecAds.ContainsKey("mrec"))
+            {
+                mrecAds["mrec"].Show();
+                LogInfo("MREC ad shown");
+            }
+            else
+            {
+                LogWarning("No MREC ad loaded to show");
             }
         }
         #endregion

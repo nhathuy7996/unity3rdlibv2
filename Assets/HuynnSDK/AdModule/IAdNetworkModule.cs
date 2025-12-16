@@ -52,5 +52,15 @@ namespace GameDevToi.ThirdLib.AdModule
         /// Hiện banner (chỉ áp dụng cho banner ads)
         /// </summary>
         void ShowBanner();
+
+        /// <summary>
+        /// Ẩn MREC (Medium Rectangle 300x250)
+        /// </summary>
+        void HideMrec();
+
+        /// <summary>
+        /// Hiện MREC (Medium Rectangle 300x250)
+        /// </summary>
+        void ShowMrec();
     }
 }

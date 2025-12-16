@@ -24,6 +24,7 @@ namespace GameDevToi.ThirdLib.Core
 
             // Register built-in formats
             RegisterFormat(AdFormats.Banner);
+            RegisterFormat(AdFormats.Mrec);
             RegisterFormat(AdFormats.Interstitial);
             RegisterFormat(AdFormats.Rewarded);
             RegisterFormat(AdFormats.AppOpen);

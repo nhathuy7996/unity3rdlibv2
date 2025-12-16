@@ -38,6 +38,7 @@ namespace GameDevToi.ThirdLib.Core
     public static class AdFormats
     {
         public static readonly AdFormatDefinition Banner = new AdFormatDefinition("banner", "Banner", "Standard banner ads");
+        public static readonly AdFormatDefinition Mrec = new AdFormatDefinition("mrec", "MREC", "Medium Rectangle ads (300x250)");
         public static readonly AdFormatDefinition Interstitial = new AdFormatDefinition("interstitial", "Interstitial", "Full-screen interstitial ads");
         public static readonly AdFormatDefinition Rewarded = new AdFormatDefinition("rewarded", "Rewarded", "Rewarded video ads");
         public static readonly AdFormatDefinition AppOpen = new AdFormatDefinition("appopen", "App Open", "App open ads");

@@ -38,6 +38,24 @@ namespace GameDevToi.ThirdLib.Example
             }
         }
 
+        // Ví dụ hiển thị MREC (Medium Rectangle 300x250)
+        public void ShowMrec()
+        {
+            if (AdBridge.Instance != null)
+            {
+                AdBridge.Instance.ShowAd(AdFormats.Mrec); // Type-safe!
+            }
+        }
+
+        // Ví dụ ẩn MREC
+        public void HideMrec()
+        {
+            if (AdBridge.Instance != null)
+            {
+                AdBridge.Instance.HideMrec();
+            }
+        }
+
         // Ví dụ hiển thị Interstitial
         public void ShowInterstitial()
         {
@@ -78,6 +96,9 @@ namespace GameDevToi.ThirdLib.Example
 
                 bool bannerReady = AdBridge.Instance.IsAdReady(AdFormats.Banner);
                 Debug.Log($"Banner ready: {bannerReady}");
+
+                bool mrecReady = AdBridge.Instance.IsAdReady(AdFormats.Mrec);
+                Debug.Log($"MREC ready: {mrecReady}");
             }
         }
 
@@ -152,31 +173,41 @@ namespace GameDevToi.ThirdLib.Example
         // Test button trong Inspector
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(10, 10, 300, 400));
+            GUILayout.BeginArea(new Rect(10, 10, 300, 500));
 
             GUILayout.Label("AdBridge Test Panel", GUI.skin.box);
 
-            if (GUILayout.Button("Show Banner", GUILayout.Height(50)))
+            if (GUILayout.Button("Show Banner", GUILayout.Height(40)))
             {
                 ShowBanner();
             }
 
-            if (GUILayout.Button("Show Interstitial", GUILayout.Height(50)))
+            if (GUILayout.Button("Show MREC", GUILayout.Height(40)))
+            {
+                ShowMrec();
+            }
+
+            if (GUILayout.Button("Hide MREC", GUILayout.Height(40)))
+            {
+                HideMrec();
+            }
+
+            if (GUILayout.Button("Show Interstitial", GUILayout.Height(40)))
             {
                 ShowInterstitial();
             }
 
-            if (GUILayout.Button("Show Rewarded", GUILayout.Height(50)))
+            if (GUILayout.Button("Show Rewarded", GUILayout.Height(40)))
             {
                 ShowRewarded();
             }
 
-            if (GUILayout.Button("Check Ad Ready", GUILayout.Height(50)))
+            if (GUILayout.Button("Check Ad Ready", GUILayout.Height(40)))
             {
                 CheckAdReady();
             }
 
-            if (GUILayout.Button("Print Debug Info", GUILayout.Height(50)))
+            if (GUILayout.Button("Print Debug Info", GUILayout.Height(40)))
             {
                 if (AdBridge.Instance != null)
                 {

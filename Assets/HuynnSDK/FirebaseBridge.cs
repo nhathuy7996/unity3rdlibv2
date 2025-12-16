@@ -116,6 +116,13 @@ namespace GameDevToi.ThirdLib
             // Uncomment when Firebase SDK is installed
             Firebase.FirebaseApp.CheckAndFixDependenciesAsync().ContinueWithOnMainThread(task =>
             {
+                if (task.IsFaulted || task.IsCanceled)
+                {
+                    Debug.LogError($"[FirebaseBridge] Firebase initialization failed: {task.Exception?.Message}");
+                    isFirebaseInitialized = false;
+                    return;
+                }
+
                 var dependencyStatus = task.Result;
                 if (dependencyStatus == Firebase.DependencyStatus.Available)
                 {
@@ -132,11 +139,6 @@ namespace GameDevToi.ThirdLib
                     isFirebaseInitialized = false;
                 }
             });
-
-
-            // Temporary: Mark as initialized for testing
-            isFirebaseInitialized = true;
-            Debug.Log("[FirebaseBridge] Firebase initialized (Mock mode - install Firebase SDK for real implementation)");
         }
 
         /// <summary>

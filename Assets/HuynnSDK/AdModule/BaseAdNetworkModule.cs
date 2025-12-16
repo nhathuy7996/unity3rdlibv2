@@ -47,6 +47,16 @@ namespace GameDevToi.ThirdLib.AdModule
             LogWarning("ShowBanner not implemented for this network");
         }
 
+        public virtual void HideMrec()
+        {
+            LogWarning("HideMrec not implemented for this network");
+        }
+
+        public virtual void ShowMrec()
+        {
+            LogWarning("ShowMrec not implemented for this network");
+        }
+
         protected void LogInfo(string message)
         {
             var networkDef = AdRegistry.GetNetwork(NetworkId);
